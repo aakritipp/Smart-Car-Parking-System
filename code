@@ -1,0 +1,215 @@
+#include<avr/io.h>
+#include<util/delay.h>
+
+#define lcd PORTB
+#define rs  0
+#define rw  1
+#define en  2
+
+void lcd_init();
+void lcd_command(unsigned char);
+void lcd_data(unsigned char);
+void lcd_string(unsigned char *str);
+void lcd_number(unsigned int);
+int door_open();
+
+int main()
+{	//unsigned char d;
+
+	DDRB = 0xff;
+int a,b,entry;
+
+	entry=48;
+	a=0;
+	b=0;
+	
+	lcd_init();
+	lcd_command(0x80);
+	lcd_string("CAR PARKING");
+	lcd_command(0xc0);
+	
+	
+	PORTD=0b00000000;
+	DDRD=0b01010101;
+	DDRC=0x0f;
+	
+
+
+	lcd_string("ENTRY NO.");
+
+
+	while(1)
+	{  
+		
+	DDRA=0b00000011;
+		DDRC=0x0f;
+
+	{
+		if(47<entry<52)
+		{
+		if((PINA&0x04)==0&&a==0)
+	{a=1;
+		PORTA=0b00000101;     //clockwise  doorclose
+		_delay_ms(1000);
+	PORTA=0b00000000;
+		_delay_ms(1000);
+	
+	}
+	
+	
+if((PINA&0x04)!=0&&a==1)
+	{PORTA=0b00001010;     //anticlockwise   door open 
+		_delay_ms(1000);
+		PORTA=0b00000000;
+		_delay_ms(1000);
+		lcd_command(0xc8);
+			
+		
+	entry++;
+		//entry=entry+48;
+		lcd_data(entry);
+		
+		
+
+		a=0;}}
+		if(entry>51)
+		{
+			lcd_command(0x80);
+			lcd_string("     NO ENTRY    ");
+			lcd_command(0xc0);
+			lcd_string("ENTRY NO. 4");
+		}
+	if((PINA&0x08)==0&&b==0)
+	{b=1;
+		PORTA=0b00000101;     //clockwise  doorclose
+		_delay_ms(1000);
+	PORTA=0b00000000;
+		_delay_ms(1000);
+	entry--;
+		
+		lcd_command(0xc8);
+		lcd_data(entry);
+		}
+		
+	if((PINA&0x08)!=0&&b==1)
+	{PORTA=0b00001010;     //anticlockwise   door open 
+		_delay_ms(1000);
+		PORTA=0b00000000;
+		_delay_ms(1000);
+	b=0;}
+	}
+	if((PIND&0x02)==0)
+		{
+		PORTD |=0b00000001;
+			_delay_ms(250);
+		
+		}
+		
+		if((PIND&0x02)!=0)
+			
+		{	
+			PORTD &= ~(0b00000001);
+			_delay_ms(250);
+		}
+		
+		if((PIND&0x08)!=0)
+		{
+		PORTD |=0b00000100;
+			_delay_ms(250);
+			
+		}
+		if((PIND&0x08)==0)
+			
+		{	
+			
+			PORTD &= ~(0b00000100);
+			_delay_ms(250);
+		}
+		if((PIND&0x20)!=0)
+		{//count++;
+		PORTD |=0b00010000;
+			_delay_ms(50);
+			//lcd_data(count);
+		}
+		if((PIND&0x20)==0)
+		{	
+			
+			PORTD &= ~(0b00010000);
+		_delay_ms(150);}
+		if((PIND&0x80)!=0)
+		{//count++;
+		PORTD |=0b01000000;
+			_delay_ms(50);
+			//lcd_data(count);
+		}
+		if((PIND&0x80)==0)
+			
+		{	
+			
+			PORTD &= ~(0b01000000);
+		_delay_ms(150);}
+		
+	
+}
+return 0;
+}
+void lcd_init()
+{
+	lcd_command(0x02);
+ 	lcd_command(0x28);
+	lcd_command(0x06);
+	lcd_command(0x0c);
+}
+void lcd_command(unsigned char com)
+	{
+	lcd = com & 0xF0;		//send higher bit
+
+	lcd &= ~(1<<rs); 		//rs =0
+	lcd &= ~(1<<rw);		//rw =0
+	lcd |=(1<<en);			//en =1
+	_delay_ms(1);
+	lcd &= ~(1<<en);		//en =0
+	_delay_ms(1);
+
+	lcd = (com<<4) & 0xF0;	//send lower bit
+
+	lcd &= ~(1<<rs); 		//rs =0
+	lcd &= ~(1<<rw);		//rw =0
+	lcd |=(1<<en);			//en =1
+	_delay_ms(1);
+	lcd &= ~(1<<en);		//en =0
+	_delay_ms(1);
+	}
+void lcd_data(unsigned char value)
+	{
+
+	lcd =value & 0xF0;		//send higher bit
+
+	lcd |= (1<<rs); 		//rs =1
+	lcd &= ~(1<<rw);		//rw =0
+	lcd |=(1<<en);			//en =1
+	_delay_ms(1);
+	lcd &= ~(1<<en);		//en =0
+	_delay_ms(1);
+
+
+	lcd =(value<<4) & 0xF0;	//send lower bit
+
+	lcd |= (1<<rs); 		//rs =1
+	lcd &= ~(1<<rw);		//rw =0
+	lcd |=(1<<en);			//en =1
+	_delay_ms(1);
+	lcd &= ~(1<<en);		//en =0
+	_delay_ms(1);
+	}
+
+void lcd_string(unsigned char *str)
+{
+	int i;
+	i=0;
+	while(str[i]!='\0')
+	{
+	lcd_data(str[i]);
+	i++;
+	}
+}
